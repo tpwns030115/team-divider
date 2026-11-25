@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>팀 나누기</title>
+  <style>
+    :root {
+      --green: #2e8b57;
+      --green-dark: #236b43;
+      --bg: #f3f7f4;
+      --card: #ffffff;
+      --text: #1f2a24;
+      --muted: #7a8a80;
+      --line: #dfe8e2;
+      --red: #c0392b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    }
+    .app { max-width: 480px; margin: 0 auto; }
+
+    header { text-align: center; padding: 16px 0 8px; }
+    header h1 { margin: 0; font-size: 26px; }
+    header p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 16px; }
+
+    .row { display: flex; gap: 8px; }
+    input[type="text"], select {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      font-size: 15px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--green);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    button:hover { background: var(--green-dark); }
+    .big { width: 100%; margin-top: 14px; padding: 14px; font-size: 17px; }
+
+    .pos-select { flex: 0 0 104px; }
+
+    .count-row { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 6px; }
+    .count { margin: 0; font-size: 13px; color: var(--muted); }
+    .small { padding: 6px 12px; font-size: 13px; }
+    .ghost { background: #e8efe9; color: var(--muted); }
+    .ghost:hover { background: #f3d6d3; color: var(--red); }
+    #player-list { list-style: none; margin: 0; padding: 0; }
+    .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 14px 0; }
+
+    /* 포지션별 가로 배치 */
+    .pos-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .pos-group:last-child { border-bottom: none; }
+    .pos-label { flex: 0 0 76px; font-size: 13px; font-weight: 600; color: var(--green-dark); padding-top: 5px; }
+    .members { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+    .none { color: var(--muted); font-size: 13px; padding-top: 5px; }
+    .player {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 4px 3px 11px;
+      font-size: 14px;
+      background: #e8f3ec;
+      border-radius: 999px;
+    }
+    .del {
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--muted);
+      background: transparent;
+      border-radius: 50%;
+    }
+    .del:hover { background: #f3d6d3; color: var(--red); }
+
+    /* 이름을 눌러서 수정 */
+    .player .name { cursor: pointer; padding: 2px 0; }
+    .player .name:hover { text-decoration: underline; }
+    .player.editing {
+      flex-wrap: wrap;
+      padding: 4px;
+      background: #fff;
+      border: 1px solid var(--green);
+      border-radius: 12px;
+    }
+    .player.editing input[type="text"] { flex: 1 1 90px; width: 90px; padding: 5px 8px; font-size: 14px; border-radius: 8px; }
+    .player.editing select { flex: 0 0 auto; padding: 5px 6px; font-size: 13px; border-radius: 8px; }
+    .player.editing .small { padding: 5px 10px; border-radius: 8px; }
+
+    .setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .setting + .setting { margin-top: 10px; }
+    .setting select { flex: 0 0 120px; }
+
+    .hint { margin: 14px 0 0; font-size: 12px; color: var(--muted); }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .chip {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e8f3ec;
+      color: var(--green-dark);
+    }
+    .chip.short { background: #fbe3e0; color: var(--red); }
+
+    .warn { color: var(--red); font-size: 14px; line-height: 1.6; }
+    .team { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 10px; }
+    .team:first-child { margin-top: 0; }
+    .team h3 { margin: 0 0 8px; font-size: 15px; }
+    .team p { margin: 4px 0; font-size: 14px; line-height: 1.5; }
+    .team .label { display: inline-block; width: 68px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <header>
+      <h1>⚽ 팀 나누기</h1>
+      <p>참가자와 포지션을 입력하면 팀을 나눠줘요</p>
+    </header>
+
+    <!-- 1. 참가자 입력 -->
+    <section class="card">
+      <h2>참가자</h2>
+      <div class="row">
+        <input type="text" id="name-input" placeholder="이름 입력 후 엔터">
+        <select id="position-select" class="pos-select"></select>
+        <button id="add-btn">추가</button>
+      </div>
+      <div class="count-row">
+        <p class="count">참가자 <span id="player-count">0</span>명 · 이름을 누르면 수정할 수 있어요</p>
+        <button class="small ghost" id="clear-btn">전체 삭제</button>
+      </div>
+      <div id="player-list"></div>
+    </section>
+
+    <!-- 2. 설정 -->
+    <section class="card">
+      <h2>설정</h2>
+      <div class="setting">
+        <label for="team-count">팀 수</label>
+        <select id="team-count">
+          <option value="2">2팀</option>
+          <option value="3">3팀</option>
+          <option value="4">4팀</option>
+        </select>
+      </div>
+      <div class="setting">
+        <label for="formation-select">포메이션</label>
+        <select id="formation-select">
+          <option value="4-3-3">4-3-3</option>
+          <option value="4-4-2">4-4-2</option>
+          <option value="3-5-2">3-5-2</option>
+          <option value="4-5-1">4-5-1</option>
+          <option value="3-4-3">3-4-3</option>
+        </select>
+      </div>
+      <p class="hint">포지션별 현재 인원 / 필요 인원 (골키퍼는 팀당 1명)</p>
+      <div class="chips" id="status"></div>
+      <button class="big" id="divide-btn">팀 나누기</button>
+    </section>
+
+    <!-- 3. 결과 -->
+    <section class="card">
+      <h2>결과</h2>
+      <div id="result"></div>
+    </section>
+
+  </div>
+
+  <script>
+    const POSITIONS = ['GK', 'DF', 'MF', 'FW'];
+    const POS_NAME = { GK: '골키퍼', DF: '수비', MF: '미드필더', FW: '공격' };
+    const FORMATIONS = {
+      '4-3-3': { DF: 4, MF: 3, FW: 3 },
+      '4-4-2': { DF: 4, MF: 4, FW: 2 },
+      '3-5-2': { DF: 3, MF: 5, FW: 2 },
+      '4-5-1': { DF: 4, MF: 5, FW: 1 },
+      '3-4-3': { DF: 3, MF: 4, FW: 3 }
+    };
+    const TEAM_NAMES = ['A팀', 'B팀', 'C팀', 'D팀'];
+    const EMPTY_RESULT = '<p class="empty">팀 나누기를 누르면 결과가 여기에 나와요</p>';
+
+    const nameInput = document.getElementById('name-input');
+    const positionSelect = document.getElementById('position-select');
+    const addBtn = document.getElementById('add-btn');
+    const playerList = document.getElementById('player-list');
+    const playerCount = document.getElementById('player-count');
+    const teamCount = document.getElementById('team-count');
+    const formationSelect = document.getElementById('formation-select');
+    const statusBox = document.getElementById('status');
+    const divideBtn = document.getElementById('divide-btn');
+    const resultBox = document.getElementById('result');
+    const clearBtn = document.getElementById('clear-btn');
+
+    let players = [];   // { id, name, pos }
+    let nextId = 1;
+
+    // 이름·포지션 수정 중인 참가자 (없으면 null)
+    let editingId = null;
+    let editInput = null;
+    let editSelect = null;
+
+    // ----- 저장 / 불러오기 (브라우저 localStorage) -----
+    const STORAGE_KEY = 'team-divider-v1';
+
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          players: players,
+          nextId: nextId,
+          teams: teamCount.value,
+          formation: formationSelect.value
+        }));
+      } catch (e) {
+        // 저장이 막힌 환경(시크릿 모드 등)에서는 저장 없이 그대로 동작
+      }
+    }
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+
+        if (Array.isArray(data.players)) {
+          players = data.players.filter(p =>
+            p && typeof p.id === 'number' && typeof p.name === 'string' && POSITIONS.includes(p.pos)
+          );
+          const maxId = players.reduce((max, p) => Math.max(max, p.id), 0);
+          nextId = Math.max(Number(data.nextId) || 1, maxId + 1);
+        }
+        if (['2', '3', '4'].includes(String(data.teams))) teamCount.value = String(data.teams);
+        if (FORMATIONS[data.formation]) formationSelect.value = data.formation;
+      } catch (e) {
+        // 저장된 데이터가 깨졌으면 무시하고 빈 상태로 시작
+      }
+    }
+
+    // 포지션 선택 목록 채우기
+    function fillPositionOptions(select) {
+      POSITIONS.forEach(pos => {
+        const option = document.createElement('option');
+        option.value = pos;
+        option.textContent = POS_NAME[pos];
+        select.appendChild(option);
+      });
+    }
+
+    // 팀당 필요한 포지션별 인원 (골키퍼 1명 + 포메이션)
+    function perTeam() {
+      const f = FORMATIONS[formationSelect.value];
+      return { GK: 1, DF: f.DF, MF: f.MF, FW: f.FW };
+    }
+
+    // ----- 참가자 추가 / 삭제 -----
+    function addPlayer() {
+      const name = nameInput.value.trim();
+      if (!name) return;
+      players.push({ id: nextId++, name: name, pos: positionSelect.value });
+      nameInput.value = '';
+      nameInput.focus();
+      update();
+    }
+
+    addBtn.addEventListener('click', addPlayer);
+
+    // 엔터로 추가 (한글 입력 중 조합 상태의 엔터는 무시해야 두 번 추가되지 않음)
+    nameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.isComposing) addPlayer();
+    });
+
+    // 삭제 / 수정 시작 / 수정 저장 / 수정 취소 (이벤트 위임)
+    playerList.addEventListener('click', e => {
+      const target = e.target;
+      const id = Number(target.dataset.id);
+
+      if (target.matches('.del')) {
+        players = players.filter(p => p.id !== id);
+        if (editingId === id) editingId = null;
+        update();
+      } else if (target.matches('.name')) {
+        editingId = id;
+        renderPlayers();
+        if (editInput) {
+          editInput.focus();
+          editInput.select();
+        }
+      } else if (target.matches('.save')) {
+        saveEdit();
+      } else if (target.matches('.cancel')) {
+        editingId = null;
+        renderPlayers();
+      }
+    });
+
+    // 수정 중 엔터 = 저장, ESC = 취소 (한글 조합 중 엔터는 무시)
+    playerList.addEventListener('keydown', e => {
+      if (!e.target.matches('.edit-name')) return;
+      if (e.key === 'Enter' && !e.isComposing) {
+        saveEdit();
+      } else if (e.key === 'Escape') {
+        editingId = null;
+        renderPlayers();
+      }
+    });
+
+    function saveEdit() {
+      if (!editInput || !editSelect) return;
+      const name = editInput.value.trim();
+      if (!name) {
+        editInput.focus();   // 이름이 비어 있으면 저장하지 않음
+        return;
+      }
+      const player = players.find(p => p.id === editingId);
+      if (player) {
+        player.name = name;
+        player.pos = editSelect.value;
+      }
+      editingId = null;
+      update();
+    }
+
+    // 전체 삭제
+    clearBtn.addEventListener('click', () => {
+      if (players.length === 0) return;
+      if (!confirm('참가자 ' + players.length + '명을 모두 삭제할까요?')) return;
+      players = [];
+      editingId = null;
+      update();
+    });
+
+    // ----- 화면 그리기 -----
+    function renderPlayers() {
+      playerList.innerHTML = '';
+      playerCount.textContent = players.length;
+      editInput = null;
+      editSelect = null;
+
+      // 포지션마다 한 줄씩, 이름은 가로로 나열
+      POSITIONS.forEach(pos => {
+        const group = players.filter(p => p.pos === pos);
+
+        const row = document.createElement('div');
+        row.className = 'pos-group';
+
+        const label = document.createElement('span');
+        label.className = 'pos-label';
+        label.textContent = POS_NAME[pos] + ' ' + group.length;
+
+        const members = document.createElement('div');
+        members.className = 'members';
+
+        if (group.length === 0) {
+          const none = document.createElement('span');
+          none.className = 'none';
+          none.textContent = '-';
+          members.appendChild(none);
+        }
+
+        group.forEach(p => {
+          if (p.id === editingId) {
+            members.appendChild(makeEditChip(p));
+            return;
+          }
+
+          const chip = document.createElement('span');
+          chip.className = 'player';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'name';
+          nameSpan.textContent = p.name;
+          nameSpan.dataset.id = p.id;
+          nameSpan.title = '눌러서 수정';
+          chip.appendChild(nameSpan);
+
+          const del = document.createElement('button');
+          del.className = 'del';
+          del.textContent = '×';
+          del.dataset.id = p.id;
+          del.setAttribute('aria-label', p.name + ' 삭제');
+
+          chip.appendChild(del);
+          members.appendChild(chip);
+        });
+
+        row.append(label, members);
+        playerList.appendChild(row);
+      });
+    }
+
+    // 이름·포지션을 고치는 칩
+    function makeEditChip(p) {
+      const chip = document.createElement('span');
+      chip.className = 'player editing';
+
+      editInput = document.createElement('input');
+      editInput.setAttribute('type', 'text');
+      editInput.className = 'edit-name';
+      editInput.value = p.name;
+
+      editSelect = document.createElement('select');
+      editSelect.className = 'edit-pos';
+      fillPositionOptions(editSelect);
+      editSelect.value = p.pos;
+
+      const save = document.createElement('button');
+      save.className = 'small save';
+      save.textContent = '저장';
+
+      const cancel = document.createElement('button');
+      cancel.className = 'small ghost cancel';
+      cancel.textContent = '취소';
+
+      chip.append(editInput, editSelect, save, cancel);
+      return chip;
+    }
+
+    // 포지션별 현재 인원 / 필요 인원
+    function renderStatus() {
+      const teams = Number(teamCount.value);
+      const need = perTeam();
+      statusBox.innerHTML = '';
+
+      POSITIONS.forEach(pos => {
+        const have = players.filter(p => p.pos === pos).length;
+        const required = need[pos] * teams;
+        const chip = document.createElement('span');
+        chip.className = 'chip' + (have < required ? ' short' : '');
+        chip.textContent = POS_NAME[pos] + ' ' + have + '/' + required;
+        statusBox.appendChild(chip);
+      });
+    }
+
+    function resetResult() {
+      resultBox.innerHTML = EMPTY_RESULT;
+    }
+
+    function update() {
+      renderPlayers();
+      renderStatus();
+      resetResult();
+      saveData();
+    }
+
+    teamCount.addEventListener('change', () => { renderStatus(); resetResult(); saveData(); });
+    formationSelect.addEventListener('change', () => { renderStatus(); resetResult(); saveData(); });
+
+    // ----- 팀 나누기 -----
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function divideTeams() {
+      const teams = Number(teamCount.value);
+      const need = perTeam();
+
+      // 포지션별로 모자란 인원이 있는지 확인
+      const shortages = POSITIONS
+        .map(pos => ({
+          pos: pos,
+          lack: need[pos] * teams - players.filter(p => p.pos === pos).length
+        }))
+        .filter(s => s.lack > 0);
+
+      if (shortages.length > 0) {
+        const text = shortages.map(s => POS_NAME[s.pos] + ' ' + s.lack + '명').join(', ');
+        resultBox.innerHTML = '';
+        const warn = document.createElement('p');
+        warn.className = 'warn';
+        warn.textContent = '인원이 부족해요. 더 필요한 포지션: ' + text;
+        resultBox.appendChild(warn);
+        return;
+      }
+
+      // 포지션별로 섞어서 팀마다 필요한 만큼씩 나눠주기
+      const result = Array.from({ length: teams }, () => ({ GK: [], DF: [], MF: [], FW: [], SUB: [] }));
+      const leftovers = [];
+
+      POSITIONS.forEach(pos => {
+        const group = shuffle(players.filter(p => p.pos === pos));
+        for (let t = 0; t < teams; t++) {
+          result[t][pos] = group.slice(t * need[pos], (t + 1) * need[pos]);
+        }
+        leftovers.push(...group.slice(teams * need[pos]));
+      });
+
+      // 남는 인원은 후보로 팀마다 골고루
+      shuffle(leftovers).forEach((p, i) => result[i % teams].SUB.push(p));
+
+      renderResult(result);
+    }
+
+    function renderResult(result) {
+      resultBox.innerHTML = '';
+
+      result.forEach((team, i) => {
+        const box = document.createElement('div');
+        box.className = 'team';
+
+        const title = document.createElement('h3');
+        title.textContent = TEAM_NAMES[i] + ' (' + formationSelect.value + ')';
+        box.appendChild(title);
+
+        POSITIONS.forEach(pos => {
+          box.appendChild(makeLine(POS_NAME[pos], team[pos]));
+        });
+        if (team.SUB.length > 0) {
+          box.appendChild(makeLine('후보', team.SUB));
+        }
+
+        resultBox.appendChild(box);
+      });
+
+      // 결과 복사 버튼
+      const text = buildResultText(result);
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'big copy-btn';
+      copyBtn.textContent = '결과 복사';
+      copyBtn.addEventListener('click', () => {
+        copyText(text).then(
+          () => { copyBtn.textContent = '복사됨!'; },
+          () => { copyBtn.textContent = '복사 실패 - 직접 선택해서 복사해주세요'; }
+        );
+        setTimeout(() => { copyBtn.textContent = '결과 복사'; }, 1500);
+      });
+      resultBox.appendChild(copyBtn);
+    }
+
+    // 카톡에 붙여넣기 좋은 텍스트 만들기
+    function buildResultText(result) {
+      const lines = ['⚽ 팀 나누기 (' + formationSelect.value + ')'];
+      result.forEach((team, i) => {
+        lines.push('', '[' + TEAM_NAMES[i] + ']');
+        POSITIONS.forEach(pos => {
+          lines.push(POS_NAME[pos] + ': ' + team[pos].map(m => m.name).join(', '));
+        });
+        if (team.SUB.length > 0) {
+          lines.push('후보: ' + team.SUB.map(m => m.name).join(', '));
+        }
+      });
+      return lines.join('\n');
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      }
+      return fallbackCopy(text);
+    }
+
+    // 클립보드 기능이 막힌 환경을 위한 예비 방법
+    function fallbackCopy(text) {
+      return new Promise((resolve, reject) => {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.appendChild(area);
+        area.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+        document.body.removeChild(area);
+        if (ok) resolve(); else reject();
+      });
+    }
+
+    function makeLine(label, members) {
+      const p = document.createElement('p');
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'label';
+      labelSpan.textContent = label;
+      p.append(labelSpan, members.map(m => m.name).join(', '));
+      return p;
+    }
+
+    divideBtn.addEventListener('click', divideTeams);
+
+    // 시작할 때 한 번 그리기
+    fillPositionOptions(positionSelect);
+    loadData();
+    update();
+
+    // 완료: 1단계 화면 틀 / 2단계 참가자 추가·삭제, 포지션·포메이션 / 3단계 팀 나누기 / 4단계 저장 / 전체 삭제, 이름·포지션 수정 / 결과 복사
+  </script>
+</body>
+</html>
